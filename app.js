@@ -7,8 +7,9 @@ const movieInfo = require('./movieData.json');
 const app = express();
 
 
-app.use(morgan('common')); // let's see what 'common' format looks like
-
+app.use(morgan('short')); // let's see what 'common' format looks like
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common';
+app.use(morgan(morganSetting));
 
 
 app.use(function validateBearerToken(req, res, next) {
@@ -19,6 +20,19 @@ app.use(function validateBearerToken(req, res, next) {
   }
   next();
 });
+
+// 4 parameters in middleware, express knows to treat this as error handler
+app.use((error, req, res, next) => {
+  let response
+  if (process.env.NODE_ENV === 'production') {
+    response = { error: { message: 'server error' }}
+  } else {
+    response = { error }
+  }
+  res.status(500).json(response)
+})
+
+const PORT = process.env.PORT || 8000
 
 app.get('/movie', function handleGetMovie(req, res) {
   let response = movieInfo;
@@ -44,8 +58,8 @@ app.get('/movie', function handleGetMovie(req, res) {
   res.json(response);
 });
 
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => {
-  console.log(`Server listening at http://localhost:${PORT}`);
+  
 });
